@@ -1,0 +1,42 @@
+name: Report Action
+
+on:
+  push:
+    paths:
+      - 'src/**'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: trigger source
+        required: false
+        default: cron-job.org
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run scripts sequentially
+        run: |
+          mkdir -p results logs log
+          if [ -f report.txt ]; then
+            rm report.txt
+          fi
+          for f in src/*/*.sh; do
+            [ -f "$f" ] || continue
+            echo "$f" >> report.txt
+          done
+      - name: Commit report
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add report.txt
+          git commit -m "update script report" || exit 0
+          git push
