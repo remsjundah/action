@@ -1,0 +1,79 @@
+name: Run SH Scripts 2
+
+on:
+  issue_comment:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: trigger source
+        required: false
+        default: cron-job.org
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  run2:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: remsjundah/pose
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Run scripts sequentially
+        run: |
+          mkdir -p results logs log
+
+          for f in src/2/*.sh; do
+            [ -f "$f" ] || continue
+
+            RANDOM_LINE="$(shuf -n 1 data-commit.txt | tr -d '\r')"
+            sed -i "s/add file/$RANDOM_LINE/g" "$f"
+            sed -i "s/update file/$RANDOM_LINE/g" "$f"
+
+            sed -i 's/\r$//' "$f"
+            chmod +x "$f"
+
+            name=$(basename "$f")
+
+            echo "::group::RUN $f"
+
+            if bash "$f" 2>&1 | tee log/$name.log; then
+              status=success
+              rm -f log/$name.log
+            else
+              status=fail
+              cp log/$name.log logs/$name.log
+              rm -f log/$name.log
+            fi
+
+            echo "::endgroup::"
+
+            echo "$f : $status" > results/$name.txt
+          done
+
+      - name: Generate report
+        run: |
+          echo "# Script Report" > README.md
+          echo "" >> README.md
+
+          for f in results/*.txt; do
+            line=$(cat "$f")
+            if echo "$line" | grep -q success; then
+              echo "- ✅ $line" >> README.md
+            else
+              echo "- ❌ $line" >> README.md
+            fi
+          done
+
+      - name: Commit report
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add README.md logs
+          git commit -m "update script report" || exit 0
+          git push
