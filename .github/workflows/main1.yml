@@ -31,9 +31,11 @@ jobs:
           for f in src/1/*.sh; do
             [ -f "$f" ] || continue
 
-            RANDOM_LINE="$(shuf -n 1 data-commit.txt | tr -d '\r')"
-            sed -i "s/add file/$RANDOM_LINE/g" "$f"
-            sed -i "s/update file/$RANDOM_LINE/g" "$f"
+            RANDOM_LINE="$(shuf -n 1 data-commit.txt | tr -d '\r\n')"
+            ESCAPED_LINE=$(printf '%s\n' "$RANDOM_LINE" | sed 's/[&]/\\&/g')
+
+            sed -i "s|add file|$ESCAPED_LINE|g" "$f"
+            sed -i "s|update file|$ESCAPED_LINE|g" "$f"
 
             sed -i 's/\r$//' "$f"
             chmod +x "$f"
