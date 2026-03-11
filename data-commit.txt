@@ -235,7 +235,7 @@ worker: reduce inline logic in fetch
 runtime: protect against empty basename
 build: keep config generation idempotent
 ci: trim whitespace in commit message
-worker: enforce text/plain response
+worker: enforce plain response
 runtime: validate file descriptor before write
 ci: update token logging step
 worker: collapse redundant conditionals
