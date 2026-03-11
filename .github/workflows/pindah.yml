@@ -1,0 +1,48 @@
+name: move-files
+
+on:
+  workflow_dispatch:
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: remsjundah/pose
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Move files 180-202
+        run: |
+          mkdir -p src/net
+          moved=0
+
+          for i in {180..202}
+          do
+            found=0
+
+            for d in src/1 src/2 src/3
+            do
+              if [ -f "$d/$i.sh" ]; then
+                echo "Move $d/$i.sh -> src/net/"
+                mv "$d/$i.sh" src/net/
+                moved=1
+                found=1
+                break
+              fi
+            done
+
+            if [ $found -eq 0 ]; then
+              echo "Skip $i.sh (not found)"
+            fi
+          done
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add src
+          git commit -m "move 180-202 scripts to src/net"
+          git push
